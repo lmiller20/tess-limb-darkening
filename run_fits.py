@@ -13,7 +13,7 @@ import utils
 exp_time = (2./60.)/24.
 
 # Load target list. This will only load the planet name and TIC IDs:
-target_list = utils.read_data('additional_data.dat')
+target_list = utils.read_data('TESS_ID.txt')
 
 # Define fitting method. If blank (""), fit GP and transit lightcurve together. 
 # If set to "fit_out", fit out-of-transit lightcurve first with a GP, then use posteriors of that fit to 
@@ -28,7 +28,8 @@ run_multisector = True
 fit_catwoman = True
 
 # Number of threads for multi-sector fits:
-nthreads = 4
+#nthreads = 4
+nthreads = 10
 
 # Iterate through all planets:
 for planet in target_list.keys():
@@ -74,7 +75,7 @@ for planet in target_list.keys():
     if has_data:# and not os.path.exists(planet):
 
         # First, load data for each sector:
-        t, f, ferr = juliet.utils.get_all_TESS_data('TIC ' + target_list[planet]['ticid'],srcfolder='forwarddata/')
+        t, f, ferr = juliet.utils.get_all_TESS_data('TIC ' + target_list[planet]['ticid'])
 
         # If it has planetary data, go through each sector. First, estimate the transit depth precision 
         # (assuming a box-shaped transit) we would obtain with this 2-min TESS data. If this gives rise 

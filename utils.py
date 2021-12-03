@@ -374,7 +374,7 @@ def multisector_fit(tt, ff, fferr, P, P_err, t0, t0_err, ecc, omega, GPmodel = '
         for sector in t.keys():
 
             # Extract GP hyperparameters; add them to the params, dists and hyperps lists:
-            posteriors = pickle.load(open(outpath+'/'+sector+'_'+GPmodel+'_out_of_transit/posteriors.pkl', 'rb'))
+            posteriors = pickle.load(open(outpath+'/'+sector+'_'+GPmodel+'_out_of_transit/posteriors.dat', 'rb')) #Changed from pkl to dat
 
             if GPmodel == 'ExpMatern':
                 gpparams = ['GP_sigma', 'GP_timescale', 'GP_rho']

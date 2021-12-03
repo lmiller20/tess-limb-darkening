@@ -1,0 +1,16 @@
+mdilution_TESS       fixed                1.0                 
+mflux_TESS           normal               0.00030374739471482034,0.005517492841741275
+sigma_w_TESS         truncatednormal      249.03333112753842,19.688199466064713,0.1,10000.0
+GP_B_TESS            truncatednormal      2.614171000448043e-05,2.2762770106176176e-05,1e-05,1000.0
+GP_C_TESS            truncatednormal      658.3366634885253,2149.733558867768,1e-05,10000.0
+GP_L_TESS            truncatednormal      265.94682013321346,215.46917088129715,0.001,1000.0
+GP_Prot_TESS         truncatednormal      22.7751183207538,27.170355991936432,1.0,100.0
+P_p1                 normal               2.18467,1e-06       
+t0_p1                normal               2459071.4806799996,0.1
+p_p1                 uniform              0.0,1.0             
+b_p1                 uniform              0.0,2.0             
+q1_TESS              uniform              0.0,1.0             
+q2_TESS              uniform              0.0,1.0             
+ecc_p1               fixed                0.0                 
+omega_p1             fixed                90.0                
+a_p1                 loguniform           1.0,100.0           

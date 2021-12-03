@@ -1,0 +1,6 @@
+mdilution_TESS       fixed                1.0                 
+mflux_TESS           normal               0.0,0.1             
+sigma_w_TESS         loguniform           0.1,10000.0         
+GP_sigma_TESS        loguniform           1e-05,10000.0       
+GP_timescale_TESS    loguniform           0.001,100.0         
+GP_rho_TESS          loguniform           0.001,100.0         
