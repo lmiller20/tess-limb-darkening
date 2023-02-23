@@ -14,6 +14,7 @@ exp_time = (2./60.)/24.
 
 # Load target list. This will only load the planet name and TIC IDs:
 target_list = utils.read_data('TESS_ID.txt')
+density_list = utils.read_data_density('TESS_Densities.txt')
 
 # Define fitting method. If blank (""), fit GP and transit lightcurve together. 
 # If set to "fit_out", fit out-of-transit lightcurve first with a GP, then use posteriors of that fit to 
@@ -37,10 +38,19 @@ for planet in target_list.keys():
     print('Working on ',planet)
     # Load all data for this particular planet; if data exists, go forward. If not, skip 
     # target:
+    with open('completed_planets.txt') as f:
+        if str(planet) in f.read():
+            print("Already complete:",planet)
+            continue
+    with open('problem_planets.txt') as f:
+        if str(planet) in f.read():
+            print("Already complete:",planet)
+            continue
     try:
 
         # If Kepler planet, don't analyze it. Too much blending:
         if 'Kepler' not in planet:
+        #if 'WASP' in planet:
             planet_data, url = exoctk.utils.get_target_data(planet)
 
             # Extract useful data:
@@ -50,6 +60,26 @@ for planet in target_list.keys():
             period_err = (planet_data['orbital_period_upper'] + planet_data['orbital_period_lower'])*0.5
             t0 = planet_data['transit_time'] + 2400000.5
             t0_err = (planet_data['transit_time_upper'] + planet_data['transit_time_lower'])*0.5
+            
+            density=density_list[planet]['density']
+            dens_err_up=density_list[planet]['dens_err_up']
+            dens_err_low=density_list[planet]['dens_err_low']
+            
+            if 'N/A' not in density and 'N/A' not in dens_err_low and 'N/A' not in dens_err_up:
+                density=float(density)*1000
+                dens_err_low=float(dens_err_low)*1000
+                dens_err_up=float(dens_err_up)*1000
+            
+            if (type(density) is float) and (type(dens_err_up) and float) and (type(dens_err_low) is float):
+                print('Fit for {} will include stellar density as a prior'.format(planet))
+                rho = density
+                print('rho is {}'.format(rho))
+                rho_sig = np.mean([dens_err_up,dens_err_low])
+                print('rho_sigma is {}'.format(rho_sig))
+            else:
+                print('Fit for {} will not include stellar density as a prior'.format(planet))
+                rho = 0
+                rho_sig = 0
 
             # If data is not float (e.g., empty values), reject system:
             if (type(tdur) is float) and (type(tdepth) is float) and (type(period) is float) and (type(period_err) is float) and \
@@ -57,6 +87,10 @@ for planet in target_list.keys():
                 has_data = True
             else:
                 print('Something is wrong with ',planet,' data. Skipping.')
+                file2 = open("problem_planets.txt", "a")  # append mode
+                string="{} \n".format(planet)
+                file2.write(string)
+                file2.close()
                 has_data = False
 
             # Now check eccentricity and omega. If no data, set to 0 and 90:
@@ -69,6 +103,10 @@ for planet in target_list.keys():
 
     except:
         print('No planetary data for ',planet)
+        file2 = open("problem_planets.txt", "a")  # append mode
+        string="{} \n".format(planet)
+        file2.write(string)
+        file2.close()
         has_data = False
 
     # If it has data, we move ahead with the analysis:
@@ -122,26 +160,43 @@ for planet in target_list.keys():
 
             else:
                 print('\t WARNING: ',sector, ' DOES NOT look good! Not doing the fit. Expected depth precision: ',sigma_depth*1e6,' giving SNR:', tdepth/sigma_depth)
-
+                with open('problem_planets.txt') as f:
+                    if str(planet) in f.read():
+                        print("Already complete:",planet)
+                        continue
+                    else:
+                        file2 = open("problem_planets.txt", "a")  # append mode
+                        string="{} \n".format(planet)
+                        file2.write(string)
+                        file2.close()
+            
         print('run_multisector:',run_multisector,' | Good sectors:', len(good_sectors))
 
         if run_multisector and len(good_sectors)>1:
 
             print('Running multisector fit for ExpMatern:')
-            utils.multisector_fit(t, f, ferr, period, period_err, t0, t0_err, ecc, omega, GPmodel = 'ExpMatern', outpath = planet, good_sectors = good_sectors, method = method, \
+            utils.multisector_fit(t, f, ferr, period, period_err, t0, t0_err, ecc, omega, rho, rho_sig,  GPmodel = 'ExpMatern', outpath = planet, good_sectors = good_sectors, method = method, \
                                  in_transit_length = factor*tdur, nthreads = nthreads)
 
             print('Running multisector fit for QP:')
-            utils.multisector_fit(t, f, ferr, period, period_err, t0, t0_err, ecc, omega, GPmodel = 'QP', outpath = planet, good_sectors = good_sectors, method = method, \
+            utils.multisector_fit(t, f, ferr, period, period_err, t0, t0_err, ecc, omega, rho, rho_sig, GPmodel = 'QP', outpath = planet, good_sectors = good_sectors, method = method, \
                                  in_transit_length = factor*tdur, nthreads = nthreads)
             if fit_catwoman:
 
                 print('Repeating fits for catwoman model:')
 
                 print('Running multisector fit for ExpMatern for catwoman:')
-                utils.multisector_fit(t, f, ferr, period, period_err, t0, t0_err, ecc, omega, GPmodel = 'ExpMatern', outpath = planet, good_sectors = good_sectors, method = method, \
+                utils.multisector_fit(t, f, ferr, period, period_err, t0, t0_err, ecc, omega, rho, rho_sig, GPmodel = 'ExpMatern', outpath = planet, good_sectors = good_sectors, method = method, \
                                      in_transit_length = factor*tdur, fit_catwoman = fit_catwoman, nthreads = nthreads)
 
                 print('Running multisector fit for QP for catwoman:')
-                utils.multisector_fit(t, f, ferr, period, period_err, t0, t0_err, ecc, omega, GPmodel = 'QP', outpath = planet, good_sectors = good_sectors, method = method, \
+                utils.multisector_fit(t, f, ferr, period, period_err, t0, t0_err, ecc, omega, rho, rho_sig, GPmodel = 'QP', outpath = planet, good_sectors = good_sectors, method = method, \
                                      in_transit_length = factor*tdur, fit_catwoman = fit_catwoman, nthreads = nthreads)
+        #complete_list.append(planet)
+        # Append-adds at last
+        file1 = open("completed_planets.txt", "a")  # append mode
+        string="{} \n".format(planet)
+        file1.write(string)
+        file1.close()
+        command="mv /home/lmiller/TSRC/final_run/tess-limb-darkening/{}/ /user/lmiller/TSRC_results/".format(str(planet))
+        os.system(command)

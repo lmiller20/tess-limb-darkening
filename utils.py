@@ -26,7 +26,7 @@ def fit(t, f, ferr, sector, P, P_err, t0, t0_err, ecc, omega, GPmodel = 'ExpMate
         
         dists1_instrument = ['fixed','normal','loguniform']
 
-        hyperps1 = [[P,P_err], [t0, 0.1], [0., 1.], [0., 2.], [0., 1.], [0., 1.], \
+        hyperps1 = [[P,P_err], [t0, 0.1], [0., 1.], [0., 1.], [0., 1.], [0., 1.], \
                    ecc, omega, [1., 100.]]
 
     else:
@@ -41,7 +41,7 @@ def fit(t, f, ferr, sector, P, P_err, t0, t0_err, ecc, omega, GPmodel = 'ExpMate
         
         dists1_instrument = ['fixed','normal','loguniform']
 
-        hyperps1 = [[P,P_err], [t0, 0.1], [0., 1.], [0., 1.], 90., [0., 2.], [0., 1.], [0., 1.], \
+        hyperps1 = [[P,P_err], [t0, 0.1], [0., 1.], [0., 1.], 90., [0., 1.], [0., 1.], [0., 1.], \
                    ecc, omega, [1., 100.]]
 
     hyperps1_instrument = [1., [0., 0.1], [0.1, 10000.]]
@@ -268,7 +268,7 @@ def fit_transit_by_transit(P, P_err, t0, t0_err, ecc, omega, GPmodel = 'ExpMater
                 print('Transit at',tc,' doesnt have n_onehour apparently:',np.abs(tt['TESS']-tc))
             start_idx = i
 
-def multisector_fit(tt, ff, fferr, P, P_err, t0, t0_err, ecc, omega, GPmodel = 'ExpMatern', outpath = 'planetfit', method = '', in_transit_length = 0., good_sectors = None, fit_catwoman = False, nthreads = 4):
+def multisector_fit(tt, ff, fferr, P, P_err, t0, t0_err, ecc, omega, rho, rho_sig, GPmodel = 'ExpMatern', outpath = 'planetfit', method = '', in_transit_length = 0., good_sectors = None, fit_catwoman = False, nthreads = 4):
 
     if good_sectors is not None:
         t, f, ferr = {}, {}, {}
@@ -308,28 +308,48 @@ def multisector_fit(tt, ff, fferr, P, P_err, t0, t0_err, ecc, omega, GPmodel = '
     # First define parameter names, distributions and hyperparameters for sector-independant parameters:
 
     if not fit_catwoman:
+        if rho==0 or rho_sig==0: 
+            
+            params = ['P_p1', 't0_p1', 'p_p1', 'b_p1', 'q1_'+all_sectors, 'q2_'+all_sectors, \
+                       'ecc_p1', 'omega_p1', 'mdilution_'+all_sectors] #Replaced a_p1 to stellar dens. 
 
-        params = ['P_p1', 't0_p1', 'p_p1', 'b_p1', 'q1_'+all_sectors, 'q2_'+all_sectors, \
-                   'ecc_p1', 'omega_p1', 'a_p1', 'mdilution_'+all_sectors]
+            dists = ['normal', 'normal', 'uniform', 'uniform', 'uniform', 'uniform', \
+                       'fixed','fixed','truncatednormal', 'fixed']
 
-        dists = ['normal', 'normal', 'uniform', 'uniform', 'uniform', 'uniform', \
-                   'fixed','fixed','loguniform', 'fixed']
+            hyperps = [[P,P_err], [t0, 0.1], [0., 1.], [0., 1.], [0., 1.], [0., 1.], \
+                       ecc, omega, 1.]
+        else: 
 
-        hyperps = [[P,P_err], [t0, 0.1], [0., 1.], [0., 1.], [0., 1.], [0., 1.], \
-                   ecc, omega, [1., 100.], 1.]
+            params = ['P_p1', 't0_p1', 'p_p1', 'b_p1', 'q1_'+all_sectors, 'q2_'+all_sectors, \
+                       'ecc_p1', 'omega_p1', 'rho', 'mdilution_'+all_sectors] #Replaced a_p1 to stellar dens. 
+
+            dists = ['normal', 'normal', 'uniform', 'uniform', 'uniform', 'uniform', \
+                       'fixed','fixed','truncatednormal', 'fixed']
+
+            hyperps = [[P,P_err], [t0, 0.1], [0., 1.], [0., 1.], [0., 1.], [0., 1.], \
+                       ecc, omega, [rho, rho_sig,0.,10000.], 1.]
 
     else:
+        if rho==0 or rho_sig==0:
+            params = ['P_p1', 't0_p1', 'p1_p1', 'p2_p1', 'phi_p1', 'b_p1', 'q1_'+all_sectors, 'q2_'+all_sectors, \
+                       'ecc_p1', 'omega_p1','mdilution_'+all_sectors] #Also replaced a_p1 to stellar dens.
 
-        params = ['P_p1', 't0_p1', 'p1_p1', 'p2_p1', 'phi_p1', 'b_p1', 'q1_'+all_sectors, 'q2_'+all_sectors, \
-                   'ecc_p1', 'omega_p1', 'a_p1', 'mdilution_'+all_sectors]
+            dists = ['normal', 'normal', 'uniform', 'uniform', 'fixed', 'uniform', 'uniform', 'uniform', \
+                       'fixed','fixed','truncatednormal', 'fixed']
 
-        dists = ['normal', 'normal', 'uniform', 'uniform', 'fixed', 'uniform', 'uniform', 'uniform', \
-                   'fixed','fixed','loguniform', 'fixed']
+            hyperps = [[P,P_err], [t0, 0.1], [0., 1.], [0., 1.], 90., [0., 1.], [0., 1.], [0., 1.], \
+                       ecc, omega,1.]
+        else:
+            params = ['P_p1', 't0_p1', 'p1_p1', 'p2_p1', 'phi_p1', 'b_p1', 'q1_'+all_sectors, 'q2_'+all_sectors, \
+                       'ecc_p1', 'omega_p1', 'rho', 'mdilution_'+all_sectors] #Also replaced a_p1 to stellar dens.
 
-        hyperps = [[P,P_err], [t0, 0.1], [0., 1.], [0., 1.], 90., [0., 2.], [0., 1.], [0., 1.], \
-                   ecc, omega, [1., 100.], 1.]
+            dists = ['normal', 'normal', 'uniform', 'uniform', 'fixed', 'uniform', 'uniform', 'uniform', \
+                       'fixed','fixed','truncatednormal', 'fixed']
 
-    # Now, depending on the method, iterate to check the priors for the GP, mflux and sigma_w parameters for each 
+            hyperps = [[P,P_err], [t0, 0.1], [0., 1.], [0., 1.], 90., [0., 1.], [0., 1.], [0., 1.], \
+                       ecc, omega, [rho, rho_sig,0.,10000.], 1.]
+
+# Now, depending on the method, iterate to check the priors for the GP, mflux and sigma_w parameters for each 
     # sector:
     if method == '':
         for sector in t.keys():
@@ -366,6 +386,8 @@ def multisector_fit(tt, ff, fferr, P, P_err, t0, t0_err, ecc, omega, GPmodel = '
                               yerr_lc = ferr, GP_regressors_lc = t, out_folder = outpath+'/multisector_FULL_'+GPmodel)
 
         # If more than 4 sectors are fit, free parameters are larger than 30 --- so use dynesty:
+        #if planet=='HAT-P-30b':
+            #results = dataset.fit(sampler = 'dynamic_dynesty', bound = 'single', n_effective = 100, use_stop = False, nthreads = 4)
         if len(t.keys())>=4:
             results = dataset.fit(sampler = 'dynamic_dynesty', bound = 'single', n_effective = 100, use_stop = False, nthreads = 4)
         else:
@@ -439,6 +461,23 @@ def read_data(fname):
                 name, ticid = lv[0], lv[1]
                 data[name] = {}
                 data[name]['ticid'] = ticid
+        else:
+            break
+    return data
+
+def read_data_density(fname):
+    fin = open(fname, 'r')
+    data = {}
+    while True:
+        line = fin.readline()
+        if line != '':
+            if line[0] != '#':
+                lv = line.split()
+                name, density, dens_err_up, dens_err_low = lv[0], lv[1], lv[2], lv[3]
+                data[name] = {}
+                data[name]['density'] = density
+                data[name]['dens_err_up'] = dens_err_up
+                data[name]['dens_err_low'] = dens_err_low
         else:
             break
     return data
